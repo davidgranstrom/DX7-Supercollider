@@ -2,6 +2,8 @@
 // Implemented by Aziz Ege Gonul for more info go to www.egegonul.com
 // Under GNU GPL 3 as per SuperCollider license
 
+s.boot;
+
 //Example
 ( // Note On 80 message with velocity value 100 and preset value 10000
 ~mainCaller.value(80, 100, 10002);
@@ -9,6 +11,26 @@
 ( // Note Off message
 ~mainCaller.value(80, 0);
 )
+
+// Pattern Example
+//
+// Use the custom event type "dx7"
+// The preset for the current note can be defined using the "preset" key
+//
+(
+p = Pbind(
+    \type, \dx7,
+    \preset, 11,
+    // \preset, Pstutter(8, Pwhite(0, 100)),
+    \scale, Scale.minor,
+    \mtranspose, Pstutter(8, Pseq([ 0, 2, 0, 4 ], inf)),
+    \degree, Pseq([ 1, 3, 5, 8 ].mirror1 - 1, inf),
+    \amp, Pseg(Pseq([ 0.125, 1.0 ], inf), Pseq([ 2, 2 ], inf), \sine),
+    \dur, 1/8
+).play;
+)
+
+p.stop;
 
 /*
 %%%---INSTRUCTIONS---%%%
@@ -706,6 +728,48 @@ r = File("DX7.afx".resolveRelative,"r");
 	noteParser.value(y, x)
 
 };
+
+Event.addEventType(\dx7, {|server|
+    var note = ~midinote.valueEnvir;
+    var vel = (~amp.valueEnvir * 127).round;
+
+    ~instrument = \DX7;
+    ~group = novaDX7;
+    ~preset = ~preset ?? { 0 };
+
+    // note parser
+    if (vel > 0) {
+        g = dx7patches[~preset];
+        145.do {arg item;
+            k = (g.at((item*2)) ++ g.at((item*2) + 1)).asInt;
+            f.value(cirklonCCparse[item][0],cirklonCCparse[item][1],k);
+        };
+
+        if(vr[137] == 1, {//lfo sync controller
+            if(betass == 1,   {
+                headno.free;
+            });
+            betass = 1;
+            headno = Synth.before(novaDX7, \InfEfx, defjamHead.value(0));
+        },
+        {
+            if(betass == 0,   {
+                betass = 1;
+                headno = Synth.before(novaDX7, \InfEfx, defjamHead.value(0))
+            },
+            {
+                headno.set(defjamHead.value(0))
+            });
+        });
+    };
+
+    ~msgFunc = {|instrument|
+        defme.value(note, vel);
+    };
+
+    ~type = \note;
+    currentEnvironment.play;
+});
 )
 
 /*
