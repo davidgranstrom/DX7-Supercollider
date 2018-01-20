@@ -730,7 +730,7 @@ r = File("DX7.afx".resolveRelative,"r");
 };
 
 Event.addEventType(\dx7, {|server|
-    var note = ~midinote.valueEnvir;
+    var note = ~freq.valueEnvir.cpsmidi;
     var vel = (~amp.valueEnvir * 127).round;
 
     ~instrument = \DX7;
