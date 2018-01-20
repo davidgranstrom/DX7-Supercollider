@@ -732,43 +732,50 @@ r = File("DX7.afx".resolveRelative,"r");
 Event.addEventType(\dx7, {|server|
     var note = ~freq.valueEnvir.cpsmidi;
     var vel = (~amp.valueEnvir * 127).round;
+    var preset = ~preset ?? { 0 };
+    var group = ~group.valueEnvir ?? { ParGroup.new };
 
     ~instrument = \DX7;
-    ~group = novaDX7;
-    ~preset = ~preset ?? { 0 };
 
-    // note parser
-    if (vel > 0) {
-        g = dx7patches[~preset];
-        145.do {arg item;
-            k = (g.at((item*2)) ++ g.at((item*2) + 1)).asInt;
-            f.value(cirklonCCparse[item][0],cirklonCCparse[item][1],k);
-        };
+    // polyphony support
+    preset = [ preset ].flat;
+    note = [ note ].flat;
+    vel = [ vel ].flat;
 
-        if(vr[137] == 1, {//lfo sync controller
-            if(betass == 1,   {
-                headno.free;
-            });
-            betass = 1;
-            headno = Synth.before(novaDX7, \InfEfx, defjamHead.value(0));
-        },
-        {
-            if(betass == 0,   {
+    [ note, vel, preset ].flopWith {|note, vel, preset|
+        // note parser
+        if (vel > 0) {
+            var g = dx7patches[preset];
+            145.do {arg item;
+                k = (g.at((item*2)) ++ g.at((item*2) + 1)).asInt;
+                f.value(cirklonCCparse[item][0],cirklonCCparse[item][1],k);
+            };
+
+            if(vr[137] == 1, {//lfo sync controller
+                if(betass == 1,   {
+                    headno.free;
+                });
                 betass = 1;
-                headno = Synth.before(novaDX7, \InfEfx, defjamHead.value(0))
+                headno = Synth.before(group, \InfEfx, defjamHead.value(0));
             },
             {
-                headno.set(defjamHead.value(0))
+                if(betass == 0,   {
+                    betass = 1;
+                    headno = Synth.before(group, \InfEfx, defjamHead.value(0))
+                },
+                {
+                    headno.set(defjamHead.value(0))
+                });
             });
-        });
-    };
 
-    ~msgFunc = {|instrument|
-        defme.value(note, vel);
-    };
+            ~msgFunc = {|instrument|
+                defme.value(note, vel);
+            };
 
-    ~type = \note;
-    currentEnvironment.play;
+            ~type = \note;
+            currentEnvironment.play;
+        };
+    };
 });
 )
 
