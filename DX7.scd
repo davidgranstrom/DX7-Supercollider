@@ -14,20 +14,42 @@ s.boot;
 
 // Pattern Example
 //
-// Use the custom event type "dx7"
-// The preset for the current note can be defined using the "preset" key
+// Use the custom event type \dx7
+// The preset for the current note can be defined using the "preset" key.
+//
+// Polyphony is supported for the `preset` key, and the `pitch` and `amp` event types (e.g. degree, freq, amp, db)
+//
+//
+// Known limitations/bugs:
+//
+// * No polyphony (multichannel expansion) for other keys than the ones listed above.
+//
+// * Strum is not working.
+//
+// * Restarting after pressing CmdPeriod will print "FAILURE IN SERVER /n_free Node **** not found".
+//   This can be safely disregarded, and avoided completely by stopping the EventStreamPlayer using .stop instead.
+//
+// * A group is created in the original code, that group will not be used by the custom event type.
+//   Press CmdPeriod once to free it, or set the variable "novaDX7" to nil if you
+//   don't intend to use the original implementation.
 //
 (
+TempoClock.default.tempo = 60/60;
+
+~group = ~group ?? { ParGroup.new };
+
 p = Pbind(
     \type, \dx7,
     \preset, 11,
-    // \preset, Pstutter(8, Pwhite(0, 100)),
+    \group, ~group,
     \scale, Scale.minor,
     \mtranspose, Pstutter(8, Pseq([ 0, 2, 0, 4 ], inf)),
-    \degree, Pseq([ 1, 3, 5, 8 ].mirror1 - 1, inf),
+    \degree, Pseq([ 0, 2, 4, 7 ].mirror1, inf),
     \amp, Pseg(Pseq([ 0.125, 1.0 ], inf), Pseq([ 2, 2 ], inf), \sine),
     \dur, 1/8
 ).play;
+
+CmdPeriod.doOnce { ~group = nil };
 )
 
 p.stop;
