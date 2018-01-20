@@ -756,6 +756,7 @@ Event.addEventType(\dx7, {|server|
     var vel = (~amp.valueEnvir * 127).round;
     var preset = ~preset ?? { 0 };
     var group = ~group.valueEnvir ?? { ParGroup.new };
+    var out = ~out ?? { 0 };
 
     ~instrument = \DX7;
 
@@ -791,7 +792,7 @@ Event.addEventType(\dx7, {|server|
             });
 
             ~msgFunc = {|instrument|
-                defme.value(note, vel);
+                defme.value(note, vel) ++ [\outBus, out];
             };
 
             ~type = \note;
